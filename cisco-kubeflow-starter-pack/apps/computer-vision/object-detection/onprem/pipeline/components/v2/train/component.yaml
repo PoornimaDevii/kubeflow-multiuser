@@ -1,7 +1,8 @@
-name: Training
+name: Train
 description: train object detection and save model from weights
 inputs:
   - {name: nfs path, type: String, default: "/mnt/object_detection", description: "NFS Mount path"}
+  - {name: s3 path, type: String, description: "add s3 bucket url"}
   - {name: weights, type: String, default: "yolov3-voc_50000.weights", description: "pre-trained weights for training"}
   - {name: cfg_data, type: String, default: "voc.data", description: "data file"}
   - {name: cfg_file, type: String, default: "yolov3-voc.cfg", description: "cfg file"}
@@ -10,13 +11,18 @@ inputs:
   - {name: decay, type: String, default: "0.005", description: "decay"}
   - {name: component, type: String, default: "train", description: "Which component you are running"}
   - {name: timestamp, type: String,  description: "Provide current timestamp"}
+  - {name: user_namespace, type: String, default: "anonymous",description: "Provide user's namespace"}
+
+outputs:
+    - {name: MLPipeline Metrics, type: Metrics}
 
 implementation:
   container:
-    image: docker.io/samba07/object-detection-train:0.5
+    image: docker.io/ramdoot/object-detection-train:1.3
     command: ["/opt/deploy.sh"]
     args: [
       --nfs-path, {inputValue: nfs path},
+      --s3-path, {inputValue: s3 path},
       --weights, {inputValue: weights},
       --cfg_data, {inputValue: cfg_data},
       --cfg_file, {inputValue: cfg_file},
@@ -25,4 +31,7 @@ implementation:
       --decay, {inputValue: decay},
       --component, {inputValue: component},
       --timestamp, {inputValue: timestamp},
+      --user_namespace, {inputValue: user_namespace}
     ]
+    fileOutputs:
+      MLPipeline Metrics: mlpipeline-metrics.json

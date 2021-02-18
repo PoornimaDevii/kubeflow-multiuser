@@ -1,0 +1,85 @@
+# Creating MLflow deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlflow-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mlflow-deployment
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      labels:
+        app: mlflow-deployment
+    spec:
+      containers:
+      - name: mlflow-deployment
+        image: ramdoot/mlflow-server:0.1
+        imagePullPolicy: Always
+        args:
+        - "--host"
+        -  "0.0.0.0"
+        - "--port"
+        - "80"
+        - "--backend-store-uri"
+        - "mysql+pymysql://$(MYSQL_USER):$(MYSQL_PASSWORD)@mysql-service.kubeflow.svc.cluster.local:3306/kubeflow"
+        - "--default-artifact-root"
+        - "file:/tmp"
+        - "--workers"
+        - "2"
+        ports:
+        - name: http
+          containerPort: 80
+          protocol: TCP
+        resources:
+          requests:
+            cpu: "2"
+            memory: "2Gi"
+        env: 
+          - name: MYSQL_USER
+            valueFrom:
+              secretKeyRef:
+                name: mysqldb-secret
+                key: mysql-user
+          - name: MYSQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mysqldb-secret
+                key: mysql-password
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mlflow-service
+spec:
+  ports:
+    - port: 80
+      protocol: TCP
+      name: http
+  selector:
+    app: mlflow-deployment
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: mlflow-virtualsvc
+spec:
+  gateways:
+  - kubeflow/kubeflow-gateway
+  hosts:
+  - '*'
+  http:
+  - match:
+    - uri:
+        prefix: /mlflow-dashboard/
+    rewrite:
+      uri: /
+    route:
+    - destination:
+        host: mlflow-service.kubeflow.svc.cluster.local
+        port:
+          number: 80
