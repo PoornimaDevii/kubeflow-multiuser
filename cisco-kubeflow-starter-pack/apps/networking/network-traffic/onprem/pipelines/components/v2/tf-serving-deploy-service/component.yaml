@@ -1,0 +1,13 @@
+name: Network TF Serving
+description: Serving the Network model that uses Tensorflow
+inputs:
+  - {name: timestamp, type: String}
+
+
+implementation:
+  container:
+    image: docker.io/edward1723/kf-network-serving-deploy-service:0.2
+    command: ["/bin/deploy.sh"]
+    args: [
+      --timestamp, {inputValue: timestamp},
+    ]

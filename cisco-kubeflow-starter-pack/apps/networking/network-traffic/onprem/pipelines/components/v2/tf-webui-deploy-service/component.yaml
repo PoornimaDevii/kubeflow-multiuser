@@ -1,0 +1,14 @@
+name: TF WebUI service
+description: Creating a TF WebUI service
+inputs:
+  - {name: Image path, type: GCSPath, description: 'GCS path or local directory.'}
+  - {name: timestamp, type: String}  
+
+implementation:
+  container:
+    image: docker.io/edward1723/webuiideploy-service:0.1
+    command: ["/bin/deploy.sh"]
+    args: [
+      --image, {inputValue: Image path},
+      --timestamp, {inputValue: timestamp},      
+    ]

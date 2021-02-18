@@ -1,0 +1,53 @@
+site_name: Cisco Kubeflow Starter Pack
+repo_name: 'CiscoAI/cisco-kubeflow-starter-pack'
+repo_url: https://github.com/CiscoAI/cisco-kubeflow-starter-pack
+copyright: 'Copyright &copy; 2020 Cisco Systems'
+
+google_analytics: 
+  - 'UA-161751488-1'
+  - auto
+
+dev_addr: '127.0.0.1:8000'
+
+nav:
+  - Home: './index.md'
+  - Setup:
+    - Prerequisites: 'install/k8sup.md'
+    - Kubeflow: 'install/kfup.md'
+    - Jupyter Servers: 'jupyter/createserver.md'
+    - NFS Storage Class: 'nfs/nfsup.md'
+  - Run Apps:
+    - Networking: 
+      - BLE Location Prediction: 'apps/networking/ble-localization/blerssipipeline.md'
+      - Malicious Traffic Prediction: 'apps/networking/malicious-traffic-prediction/malicious-traffic-prediction.md'
+    - Healthcare:
+      - COVID Forecasting: 'apps/healthcare/covid-forecasting/covid-forecasting.md'
+  - GitHub Source Code: https://github.com/CiscoAI/cisco-kubeflow-starter-pack
+
+plugins:
+  - monorepo
+
+theme:
+  name: material
+  logo: 'assets/images/cisco.svg'
+  favicon: 'assets/images/favicon.ico'
+  language: 'en'
+  palette:
+    primary: 'blue'
+    accent: 'blue'
+  font:
+    text: 'Circular'
+    code: 'Inconsolata'
+
+extra_css:
+  - 'assets/stylesheets/circular.css'
+
+markdown_extensions:
+  - admonition
+  - codehilite:
+      linenums: true
+  - pymdownx.tasklist
+  - pymdownx.details
+  - pymdownx.superfences
+  - toc:
+      permalink: True

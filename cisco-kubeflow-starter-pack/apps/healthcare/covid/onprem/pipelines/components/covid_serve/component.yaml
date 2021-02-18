@@ -1,0 +1,17 @@
+name: COVID TF Serving
+description: Serving the COVID-19 model 
+inputs:
+  - {name: Kubernetes namespace, type: String, default: "kubeflow", description: 'Namespace name'}
+  - {name: Server name, type: String, default: "covid"}
+  - {name: timestamp, type: String}
+  
+    
+implementation:
+  container:
+    image: poornimadevii/covid_tf_serve:v20200430--e3b0c4
+    command: ["/bin/deploy.sh"]
+    args: [
+      --namespace, {inputValue: Kubernetes namespace},
+      --server-name, {inputValue: Server name},
+      --timestamp, {inputValue: timestamp}
+    ]

@@ -1,0 +1,16 @@
+{% extends 'index.html' %}
+{% block title %} Network {% endblock %}
+{% block content %}
+<nav class="navbar navbar-default">
+       <center style="color:black;font-size:46px;">Network Traffic Prediction</center>
+</nav>
+  <div class="form">
+    <form method="POST" action='/transform' enctype="multipart/form-data">
+          <label>Network Input File</label>
+          <input type="file" name="file" /></br>
+          <button type="submit" class="btn btn-primary">submit</button>
+    </form>
+  </div>
+
+{% endblock %}
+

@@ -1,0 +1,14 @@
+name: Train COVID model
+description: Train COVID-19 model
+inputs:
+  - {name: Epochs, type: Integer, default: 100, description: 'Number of Epochs for training'} 
+  - {name: Batch size, type: Integer, default: 64, description: 'Batch size during training'}
+
+implementation:
+  container:
+    image: poornimadevii/covid_train_27:v20200427--e3b0c4
+    command: ["/usr/local/bin/python3", "/opt/covid-train.py" ]
+    args: [
+      --epochs, {inputValue: Epochs},
+      --batch_size, {inputValue: Batch size},
+          ]

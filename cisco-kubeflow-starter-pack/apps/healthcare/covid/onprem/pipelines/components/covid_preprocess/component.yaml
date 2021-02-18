@@ -1,0 +1,6 @@
+name: Preprocess COVID data
+description: Preprocess COVID-19 data
+implementation:
+  container:
+    image: poornimadevii/covid_preprocess_27:v20200427--e3b0c4
+

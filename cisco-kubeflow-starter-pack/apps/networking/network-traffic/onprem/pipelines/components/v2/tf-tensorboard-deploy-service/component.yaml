@@ -1,0 +1,13 @@
+name: TF Tensorboard service
+description: Creating a TF tensorboard service
+inputs:
+  - {name: timestamp, type: String}  
+
+
+implementation:
+  container:
+    image: docker.io/edward1723/kf-network-model-tensorboard-deploy:0.1
+    command: ["/bin/deploy.sh"]
+    args: [
+      --timestamp, {inputValue: timestamp},
+    ]
