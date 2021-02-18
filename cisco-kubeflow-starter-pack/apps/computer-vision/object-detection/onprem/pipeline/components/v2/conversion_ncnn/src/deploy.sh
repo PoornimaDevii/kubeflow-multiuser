@@ -18,11 +18,6 @@ while (($#)); do
 	CFG_FILE="$1"
 	shift
 	;;
-      "--cfg_data")
-        shift
-        CFG_DATA="$1"
-        shift
-        ;;
       "--weight-file")
         shift
         WEIGHT_FILE="$1"
@@ -71,22 +66,26 @@ NFS_PATH=${NFS_PATH}/${TIMESTAMP}
 filename=$(basename -- "$CFG_FILE")
 filename="${filename%.*}"
 
-backup_folder=$(awk '/backup/{print}' ${NFS_PATH}/cfg/${CFG_DATA} | awk '{print$3}')
-
 if [ ! -f ${NFS_PATH}/cfg/${CFG_FILE} ]; then
 	echo "${filename}.cfg file is not present!"
 	exit 1
 fi
 
-
-if [ ! -f ${backup_folder}/${WEIGHT_FILE} ]; then
-        echo "${filename}.weights file is not present!"
+if [ ! -f ${NFS_PATH}/backup/${WEIGHT_FILE} ]; then
+        echo "${filename}.weight file is not present!"
         exit 1
 fi
 
 mkdir ${NFS_PATH}/ncnn-results
 
-cd ../darknet2ncnn
+git clone https://github.com/xiangweizeng/darknet2ncnn.git
+
+cd darknet2ncnn
+
+git config --global http.proxy ''
+git submodule init
+git submodule update
+
 
 cd darknet
 make -j8
@@ -107,7 +106,7 @@ make -j8
 
 dos2unix ${NFS_PATH}/cfg/${CFG_FILE}
 
-./darknet2ncnn ${NFS_PATH}/cfg/${CFG_FILE} ${backup_folder}/${WEIGHT_FILE} ${NFS_PATH}/ncnn-results/${filename}.param ${NFS_PATH}/ncnn-results/${filename}.bin
+./darknet2ncnn ${NFS_PATH}/cfg/${CFG_FILE} ${NFS_PATH}/backup/${WEIGHT_FILE} ${NFS_PATH}/ncnn-results/${filename}.param ${NFS_PATH}/ncnn-results/${filename}.bin
 
 
 if [[ ${IS_OPTIMIZE} == "True" || ${IS_OPTIMIZE} == "true" ]]
@@ -131,28 +130,10 @@ then
 else
     if [[ ${PUSH_TO_S3} == "True" || ${PUSH_TO_S3} == "true" ]]
     then
-
-	weights_file=$(ls ${backup_folder}/*.weights)
-	weights_file_list=${weights_file[@]} 
-
-	backup_folder_name=$(echo ${backup_folder} | cut -d'/' -f5)
-        
-	if ! [[ $backup_folder_name ]]
-        then
-
-             for file in $weights_file_list
-	     do	    
-                aws s3 cp $file ${S3_PATH}/$(basename $file)
-	     done
-             aws s3 cp ${backup_folder}/map_result.txt ${S3_PATH}/map_result.txt
-	     aws s3 cp ${backup_folder}/chart-${TIMESTAMP}.png ${S3_PATH}/chart-${TIMESTAMP}.png
-
-	else
-             aws s3 cp ${backup_folder} ${S3_PATH}/${backup_folder_name} --recursive
-	fi
-
+	aws s3 cp ${NFS_PATH}/backup ${S3_PATH}/backup --recursive    
         aws s3 cp ${NFS_PATH}/ncnn-results ${S3_PATH}/ncnn-results --recursive
     else
         echo Please enter a valid input \(True/False\)
     fi
 fi
+

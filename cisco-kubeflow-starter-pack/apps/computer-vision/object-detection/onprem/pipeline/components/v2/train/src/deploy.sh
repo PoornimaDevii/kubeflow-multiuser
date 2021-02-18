@@ -75,19 +75,18 @@ NFS_PATH=${NFS_PATH}/${TIMESTAMP}
 
 cd ${NFS_PATH}
 
-gpus=""
-for ((x=0; x < $GPUS ; x++ ))
-do
-   if [[ $gpus == "" ]]
-   then
-      gpus="$x"
-   else
-      gpus="$gpus,$x"
-   fi
-done
-
 if [[ $COMPONENT == "train" || $COMPONENT == "TRAIN" ]]
 then
+    gpus=""
+    for ((x=0; x < $GPUS ; x++ ))
+    do
+        if [[ $gpus == "" ]]
+        then
+                gpus="$x"
+        else
+                gpus="$gpus,$x"
+        fi
+    done
     
     kubectl patch pod $HOSTNAME -n kubeflow -p '{"metadata": {"labels": {"app" : "object-detection-train-'${TIMESTAMP}'"}}}'
 
@@ -152,18 +151,17 @@ EOF
     sleep 10
    
     echo Training has started...
+   
+    # Training
+    darknet detector train cfg/${CFG_DATA} cfg/${CFG_FILE} pre-trained-weights/${WEIGHTS} -gpus ${gpus} -dont_show -mjpeg_port 8090 -map
 
-    if [[ ${WEIGHTS} = 'None' || ${WEIGHTS} = 'none' ]]
-    then
+    model_file_name=$(basename ${NFS_PATH}/backup/*final.weights)
 
-        # Train from scratch
-        darknet detector train cfg/${CFG_DATA} cfg/${CFG_FILE} -gpus ${gpus} -dont_show -mjpeg_port 8090 -map
-    else
-        # Train with pre-trained weights
-        darknet detector train cfg/${CFG_DATA} cfg/${CFG_FILE} pre-trained-weights/${WEIGHTS} -gpus ${gpus} -dont_show -mjpeg_port 8090 -map
-    fi
+    darknet detector map cfg/${CFG_DATA} cfg/${CFG_FILE} backup/$model_file_name > map_result.txt
 
-    sleep 5
+    mv map_result.txt ./backup
+
+    sleep 10
 
     # Delete service once training is completed
     kubectl delete -f object-detection-service-${TIMESTAMP}.yaml -n kubeflow
@@ -175,35 +173,6 @@ EOF
 
     rm -rf object-detection-virtualsvc-${TIMESTAMP}.yaml
 
-
-    backup_folder=$(awk '/backup/{print}' cfg/${CFG_DATA} | awk '{print$3}')
-
-    
-    model_file_name=$(basename ${backup_folder}/*final.weights)
-
-    darknet detector map cfg/${CFG_DATA} cfg/${CFG_FILE} ${backup_folder}/$model_file_name > map_result.txt
-
-    # Collect metrics for MLflow logging
-    values_list=$(awk '/recall/{print}' map_result.txt | sed s/,/\\n/g)
-    precision_score=$(echo $values_list | awk '{print $7}')
-    recall_score=$(echo $values_list | awk '{print $10}')
-    f1_score=$(echo $values_list | awk '{print $13}')
-    map_line=$(awk '/mAP@/{print}' map_result.txt)
-    map_value=$(echo $map_line | awk '{print $6}' | rev | cut -c2- | rev)
-
-    echo "{\"metrics\": [{\"name\": \"f1-score\", \"numberValue\": ${f1_score}},{\"name\": \"precision-score\", \"numberValue\": ${precision_score}},{\"name\": \"recall-score\", \"numberValue\": ${recall_score}},{\"name\": \"map-score\", \"numberValue\": ${map_value}}]}" > /mlpipeline-metrics.json
-
-    cat /mlpipeline-metrics.json
-    
-    if ! [[ -f ${backup_folder}/map_result.txt ]]
-
-    then
-          mv map_result.txt $backup_folder
-    
-    fi
-
-    sleep 10
-
     mv chart.png chart-${TIMESTAMP}.png
 
     #Collect name of visualisation pod to copy the saved loss chart
@@ -211,29 +180,15 @@ EOF
 
     kubectl cp chart-${TIMESTAMP}.png $vis_podname:/src -n kubeflow
 
-    if ! [[ -f ${backup_folder}/chart-${TIMESTAMP}.png ]]
-
-    then 
-
-         mv chart-${TIMESTAMP}.png $backup_folder 
-
-    fi
-
-
+    mv chart*.png ./backup
+   
+   
 else
-
     sed -i "s/momentum.*/momentum=${MOMENTUM}/g" cfg/${CFG_FILE}
     sed -i "s/decay.*/decay=${DECAY}/g" cfg/${CFG_FILE}
 
-    if [[ ${WEIGHTS} = 'None' || ${WEIGHTS} = 'none' ]]
-    then
-
-        # Training from scratch
-        darknet detector train cfg/${CFG_DATA} cfg/${CFG_FILE} -gpus ${gpus} -dont_show > /var/log/katib/training.log
-    else
-        # Training with pre-trained weights
-        darknet detector train cfg/${CFG_DATA} cfg/${CFG_FILE} pre-trained-weights/${WEIGHTS} -gpus ${gpus} -dont_show > /var/log/katib/training.log
-    fi
+    # Training
+    darknet detector train cfg/${CFG_DATA} cfg/${CFG_FILE} pre-trained-weights/${WEIGHTS} -gpus ${GPUS} -dont_show > /var/log/katib/training.log
        
     cat /var/log/katib/training.log
     avg_loss=$(tail -2 /var/log/katib/training.log | head -1 | awk '{ print $3 }')

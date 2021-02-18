@@ -13,12 +13,9 @@ inputs:
   - {name: timestamp, type: String,  description: "Provide current timestamp"}
   - {name: user_namespace, type: String, default: "anonymous",description: "Provide user's namespace"}
 
-outputs:
-    - {name: MLPipeline Metrics, type: Metrics}
-
 implementation:
   container:
-    image: docker.io/ramdoot/object-detection-train:1.3
+    image: docker.io/poornimadevii/object-detection-train:0.8
     command: ["/opt/deploy.sh"]
     args: [
       --nfs-path, {inputValue: nfs path},
@@ -33,5 +30,3 @@ implementation:
       --timestamp, {inputValue: timestamp},
       --user_namespace, {inputValue: user_namespace}
     ]
-    fileOutputs:
-      MLPipeline Metrics: mlpipeline-metrics.json
